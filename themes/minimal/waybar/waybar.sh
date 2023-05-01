@@ -7,4 +7,5 @@ killall -q waybar
 while pgrep -x waybar >/dev/null; do sleep 1; done
 
 # Launch main
-waybar -c $HOME/.config/hypr/themes/minimal/waybar/config -s $HOME/.config/hypr/themes/minimal/waybar/style.css &
+waybar -c "$HOME/.config/hypr/themes/minimal/waybar/config" \
+	-s "$HOME/.config/hypr/themes/minimal/waybar/style.css" &

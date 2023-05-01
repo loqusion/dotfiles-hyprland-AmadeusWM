@@ -1,35 +1,54 @@
 #!/bin/bash
 
+ID=2593
+STEP_SIZE=5
 
-down() {
-pamixer -d 5
-volume=$(pamixer --get-volume)
-[$volume -gt 0 ] && volume=`expr $volume`  
-dunstify -a "VOLUME" "Decreasing to $volume%" -h int:value:"$volume" -i audio-volume-low-symbolic -r 2593 -u normal
-canberra-gtk-play -i audio-volume-change -d "changevolume"
+usage() {
+	echo "Usage: $(basename "$0") {up|down|mute}"
+	exit 1
 }
 
-up() {
-pamixer -i 5
-volume=$(pamixer --get-volume)
-[ $volume -lt 100 ] && volume=`expr $volume`  
-dunstify -a "VOLUME" "Increasing to $volume%" -h int:value:"$volume" -i audio-volume-high-symbolic -r 2593 -u normal
-canberra-gtk-play -i audio-volume-change -d "changevolume"
+ui() {
+	volume=$(pamixer --get-volume)
+	declare -A verb=(
+		[up]="Increasing"
+		[down]="Decreasing"
+	)
+	declare -A icon=(
+		[up]="audio-volume-high-symbolic"
+		[down]="audio-volume-low-symbolic"
+	)
+	dunstify -a "VOLUME" "${verb[$1]} to $volume%" -h int:value:"$volume" -i "${icon[$1]}" -r "$ID" -u normal
+	canberra-gtk-play -i audio-volume-change -d changevolume
+}
+
+adjust() {
+	if [ "$1" == "up" ]; then
+		pamixer -i "$STEP_SIZE"
+	elif [ "$1" == "down" ]; then
+		pamixer -d "$STEP_SIZE"
+	fi
 }
 
 mute() {
-muted="$(pamixer --get-mute)"
-if $muted; then
-  pamixer -u
-  dunstify -a "VOLUME" "UNMUTED" -i audio-volume-high-symbolic -r 2593 -u normal
-else 
-  pamixer -m
-  dunstify -a "VOLUME" "MUTED" -i audio-volume-muted-symbolic -r 2593 -u normal
-fi
+	pamixer -t
+	muted="$(pamixer --get-mute)"
+	if [ "$muted" = true ]; then
+		dunstify "MUTED" -a "VOLUME" -i audio-volume-muted-symbolic -r "$ID" -u normal
+	else
+		dunstify "UNMUTED" -a "VOLUME" -i audio-volume-high-symbolic -r "$ID" -u normal
+	fi
 }
 
-case "$1" in
-  up) up;;
-  down) down;;
-  mute) mute;;
+cmd="$1"
+shift
+
+case "$cmd" in
+up | down)
+	adjust "$cmd" && ui "$cmd"
+	;;
+mute) mute ;;
+*)
+	usage
+	;;
 esac
